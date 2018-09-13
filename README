@@ -1,0 +1,5 @@
+Hackerrank solutions in haskell
+
+to run (e.g. simpleArraySum):
+
+ghc -dynamic simpleArraySum.hs && ./simpleArraySum
