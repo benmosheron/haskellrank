@@ -5,7 +5,13 @@ import qualified Data.Vector as Vec
 type V = Vec.Vector Int
 type M = Vec.Vector V
 
--- Unwrap the outermost ring
+-- Solution Summary:
+-- 1) Unwrap the matrix into it's outermost ring, then move inwards, obtaining a vector of all the rings.
+-- 2) Shift each ring by the required amount.
+-- 3) Rebuild the matrix from the shifted rings.
+
+-- 1 -- Unwrapping the matrix into rings
+-- Unwrap the outermost ring, returning the inner leftover matrix
 unwrap :: M -> (V,M)
 unwrap m = top $ right $ bottom $ left m
 
@@ -40,6 +46,8 @@ ringsRec rs m
   | otherwise = ringsRec (Vec.snoc rs r) m'
     where (r,m') = unwrap m
 
+-- 3 -- Rebuilding the matrix from the rings
+
 -- Convert vector of rings back into matrix
 unrings :: Int -> Int -> M -> M
 unrings nRows nCols mr = snd $ unringsRec mr 0 (Vec.replicate nRows (Vec.replicate nCols 0))
@@ -67,6 +75,7 @@ wrap ring layer m' = replace m' (gatherRowReplacements $ Vec.toList $ Vec.concat
         rightCol = Vec.slice (y' + x' - 1) (y' - 1) ring
         topRow = Vec.slice (y' + x' - 1 + y' - 1) (x' - 2) ring
 
+-- 2 -- Shifting each of the rings
 
 replace :: M -> [(Int,[(Int,Int)])] -> M
 replace m' changes = m' // (map (\rowChanges -> change rowChanges m') changes)
@@ -81,7 +90,11 @@ change :: (Int,[(Int,Int)]) -> M -> (Int,V)
 change (rowIndex,rowChanges) m'  = (rowIndex, (m' ! rowIndex) // rowChanges)
 
 rotateRing :: Int -> V -> V
-rotateRing d r = r
+rotateRing d r = (Vec.slice split (l - split) r) Vec.++ (Vec.slice 0 split r)
+  where l = Vec.length r
+        split = l - (mod d l)
+
+-- Tying it all together
 
 rotate :: (Int,Int,Int, M) -> M
 rotate (nRows,nCols,d,m) = unrings nRows nCols $ Vec.map (rotateRing d) $ rings m
@@ -90,5 +103,8 @@ rotate (nRows,nCols,d,m) = unrings nRows nCols $ Vec.map (rotateRing d) $ rings 
 args :: [[Int]] -> (Int,Int,Int,M)
 args ((nRows:nCols:d:[]):ls) = (nRows, nCols, d, fromList $ map fromList ls)
 
+showMatrix :: M -> String
+showMatrix = unlines . Vec.toList . Vec.map (unwords . (map show) .Vec.toList)
+
 main :: IO()
-main = interact $ show . rotate . args . map (map (read :: String -> Int) . words) . lines
+main = interact $ showMatrix . rotate . args . map (map (read :: String -> Int) . words) . lines
