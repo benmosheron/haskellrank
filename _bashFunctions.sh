@@ -14,3 +14,7 @@ compile(){
 run(){
   compile && ./$FILE
 }
+
+irun(){
+  compile && cat $1 | ./$FILE
+}
